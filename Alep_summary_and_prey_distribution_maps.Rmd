@@ -1,12 +1,9 @@
 ---
-title: "Preliminary Analysis of Prey "Aggregation""
-author: "Elan Portner, Jessie Perelman, Melanie Abecassis, Anela Choy"
+title: "Preliminary Analysis of Prey 'Aggregation'" 
+author: "Jessie Perelman, Elan Portner, Anela Choy"
 date: "1/8/2018"
 output: html_document
 ---
-
-#Size distribution of specimens
-###for which stomachs have been dissected
 
 ```{r get necessary packages, include=FALSE}
 ### Clear workspace ###
@@ -30,37 +27,114 @@ library(ggplot2)
 ```{r load data files, echo=FALSE}
 ### Load necessary data files ###
 
-## Specimen metadata is spread across several data files
+## Specimen metadata is spread across several tables
+# Specimen lengths in "TBL_Specimen_log""
+len <- read.csv("TBL_Specimen_log_11-2017.csv")
+# Capture location data in "TBL_Specimen_NOAA"
+loc <- read.csv("TBL_Specimen_NOAA_11-2017.csv") 
+# Stomach fullness data in "TBL_Sample_Log"
+full <- read.csv("TBL_STM_PRED_SUMMARY_11-2017.csv")
 
-loc <- read.csv("ALEP_NOAA_SPECIMEN_07-2016.csv")
-prey <- read.csv("ALEP_PREY_07-2016.csv")
-len = (read.csv("ALEP_SPECIMEN_LOG_07-2016.csv")[,c(1,3)])
-## fg <- read.csv("preyfg.csv")
-ind <- read.csv("ALEP_PREY_INDIV_07-2016.csv")
-
-## family <- read.csv("preytable_041616.csv")
-full <- read.csv("ALEP_PRED_SUMM_07-2016.csv")
-taxon = (read.csv("ALEP_TAXONOMIC_IDs_07-2016.csv")[,c(1,10)])
-types = unique((types <- read.csv("preytypes3_09-2016.csv")[,c(1,3)]))
-func = read.csv("functionalgroups_09-14-2016.csv")[,c(1:3)]
-
-
-```
-
-#Temporal distribution of specimens
-###for which stomachs have been dissected
-
-```{r}
+## Prey data is spread across several tables
+# Prey type taxonomy in "TBL_Taxonomic_IDs-11-2017"
+taxon <- read.csv("TBL_Taxonomic_IDs_11-2017.csv") 
+# prey item data in "TBL_STM_PREY"
+prey <- read.csv("TBL_STM_PREY_11-2017.csv") 
+# prey individual data in "TBL_STM_PREY_INDIVIDUALS"
+ind <- read.csv("TBL_STM_PREY_INDIVIDUALS_11-2017.csv")
 
 ```
 
 
-```{r, echo=FALSE}
+```{r temporal histogram data prep, echo = FALSE}
+
+#Subset Specimen log for lancetfish
+alep <- subset(len, TaxonomicID == "Alepisaurus ferox")
+# remove erroneous years, file includes 2018, 1016, blanks as of 1/2018...
+I <-  which(alep$Year.Collected == 2018 |alep$Year.Collected == 1016)
+alep <- alep[-I,]
+alep <- subset(alep, Year.Collected!= "")
+
+# remove erroneous months, file includes blanks as of 1/2018...
+alep <-subset (alep, Month.Collected!= "")
+
+# EVENTUALLY REMOVE THIS COMMENT remove erroneous entry of stomach from December 2017 (CAUTION, this will become obsolete and need to be removed once database is CLEAN)
+I <-  which(alep$Year.Collected == 2017 & alep$Month.Collected == 12)
+alep <- alep[-I,]
+
+### Add column to indicate count, to be used when aggregating data later.
+### If x-axis were continuous, we could use histogram and out data would be binned and counted automatically. However, our are discrete and we will use a barplot
+alep$count = 1
+
+## Rename year and month columns to facilitate typing 
+colnames(alep)[6] <- "yr"
+colnames(alep)[7] <- "mo"
+
+### Reorder data so it is ordered first by year and then by month ###
+## this is important for plotting, otherwise it will plot all the Januarys before all of the Februarys, etc. 
+alep<-alep[order(alep$yr,alep$mo),]
+
+### assign months to a column called "quarter"
+# needs to happen before adding zeros below, which converts datatype to character""
+alep$quarter <- ifelse(alep$mo >= 1 & alep$mo < 4, "1", 
+                       ifelse(alep$mo >= 4 & alep$mo < 7, "2",
+                              ifelse(alep$mo >= 7 & alep$mo < 10, "3", "4")))
+
+### add zeros before single digit months to make sure they properly sort
+alep$mo = ifelse(alep$mo == 1, "01", ifelse(alep$mo == 2, "02", ifelse(alep$mo==3, "03",
+                          ifelse(alep$mo==4, "04", ifelse(alep$mo== 5, "05", ifelse(alep$mo==6, "06",
+                                ifelse(alep$mo==7, "07", ifelse(alep$mo== 8, "08", ifelse(alep$mo==9,"09",alep$mo)))))))))
+
+### convert "mo"nth and "yr" to factors so they can be pasted together
+##paste mo and yr together
+alep$mo = as.factor(alep$mo)
+alep$yr = as.factor(alep$yr)
+alep$yrmo = paste(alep$yr, alep$mo, sep ="_")
+
+### Aggregate count data by year_month
+balep= aggregate(count~yrmo, data = alep, FUN = sum)
+
+### Now by quarter
+alep$quarter = as.factor(alep$quarter)
+alep$yr = as.factor(alep$yr)
+alep$yrqu = paste(alep$yr, alep$quarter, sep ="_")
+balep1= aggregate(count~yrqu, data = alep, FUN = sum)
+
+## rename length column 
+colnames(alep)[3] <- "fl"
 
 ```
+### Size distribution of specimens for which stomachs have been dissected
+```{r size distribution, echo=FALSE, warning=FALSE, message=FALSE}
+#plot histogram of sizes
+sizes <- ggplot(alep, aes(fl))+geom_histogram(fill = "white", color = "black")+labs(x="Fork Length (cm)")
+sizes
+```
 
-#Spatial distribution of specimens
-###for which stomachs have been dissected and location data acquired
+### Temporal distribution of specimens by month
+```{r temporal histogram by month, echo=FALSE, fig.width=15}
+### make barplot of number of stomachs per month by year (yrmo)
+bymonth = ggplot(data=balep, aes(x=yrmo, y=count)) +
+  geom_bar(stat="identity", color="black", fill = "red", alpha = 0.5)+
+  geom_text(aes(label=count), position=position_dodge(width=0.9), vjust=-0.5)+
+  theme(axis.title.y = element_text(margin=margin(0,80,0,0)))+ theme(axis.title.x = element_text(margin=margin(20,0,0,0)))+
+  theme_minimal()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.4, size = 14))+labs(x = "Year_Month", vjust = -3)
+bymonth
+```
+
+### Temporal distribution of specimens by quarter
+```{r temporal histogram by quarter, echo=FALSE, fig.width=15}
+### make barplot of number of stomachs per month by quarter (yrqu)
+byquarter=ggplot(data=balep1, aes(x=yrqu, y=count)) +
+  geom_bar(stat="identity", color="black", fill = "steelblue")+
+  geom_text(aes(label=count), position=position_dodge(width=0.5), vjust=-0.5)+
+  theme(axis.title.y = element_text(margin=margin(0,80,0,0)))+ theme(axis.title.x = element_text(margin=margin(20,0,0,0)))+
+  theme_minimal()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.2, size =14))+labs(x = "Year_Quarter", vjust = -3)
+byquarter
+```
+
+###Spatial distribution of specimens
+
 
 ```{r}
 
