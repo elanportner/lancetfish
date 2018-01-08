@@ -1,0 +1,85 @@
+---
+title: "Preliminary Analysis of Prey "Aggregation""
+author: "Elan Portner, Jessie Perelman, Melanie Abecassis, Anela Choy"
+date: "1/8/2018"
+output: html_document
+---
+
+#Size distribution of specimens
+###for which stomachs have been dissected
+
+```{r get necessary packages, include=FALSE}
+### Clear workspace ###
+rm(list = ls(all = TRUE)); 
+
+### load necessary packages (install packages before first use by un-commenting install.packages function. Comment out install functions after first run) ###
+
+# install.packages("marmap")
+# install.packages("mapplots")
+# install.packages("RColorBrewer")
+# install.packages("ggplot2")
+
+library(marmap)
+library(mapplots)
+library(RColorBrewer)
+library(ggplot2)
+
+```
+
+
+```{r load data files, echo=FALSE}
+### Load necessary data files ###
+
+## Specimen metadata is spread across several data files
+
+loc <- read.csv("ALEP_NOAA_SPECIMEN_07-2016.csv")
+prey <- read.csv("ALEP_PREY_07-2016.csv")
+len = (read.csv("ALEP_SPECIMEN_LOG_07-2016.csv")[,c(1,3)])
+## fg <- read.csv("preyfg.csv")
+ind <- read.csv("ALEP_PREY_INDIV_07-2016.csv")
+
+## family <- read.csv("preytable_041616.csv")
+full <- read.csv("ALEP_PRED_SUMM_07-2016.csv")
+taxon = (read.csv("ALEP_TAXONOMIC_IDs_07-2016.csv")[,c(1,10)])
+types = unique((types <- read.csv("preytypes3_09-2016.csv")[,c(1,3)]))
+func = read.csv("functionalgroups_09-14-2016.csv")[,c(1:3)]
+
+
+```
+
+#Temporal distribution of specimens
+###for which stomachs have been dissected
+
+```{r}
+
+```
+
+
+```{r, echo=FALSE}
+
+```
+
+#Spatial distribution of specimens
+###for which stomachs have been dissected and location data acquired
+
+```{r}
+
+```
+
+
+```{r, echo=FALSE}
+
+```
+
+#Spatial distribution of prey by numerical density
+###for which stomachs have been dissected and location data acquired
+
+```{r}
+
+```
+
+
+```{r, echo=FALSE}
+
+```
+
